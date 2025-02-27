@@ -106,23 +106,48 @@ if uploaded_file:
         
         st.header("Evaluate Models on Real and Synthetic Data")
 
+
         # Check if synthetic data has been generated before allowing evaluation
         if st.session_state.synthetic_data_generated:
             target_column_eval = st.selectbox("Select the target column for evaluation", data.columns)
 
+             # Ensure target column is present in both real and synthetic datasets
+            if target_column_eval not in data.columns:
+                st.error(f"Target column '{target_column_eval}' not found in real data.")
+
+                # Ensure target column exists in synthetic datasets
+            for name, dataset in {
+                "CTGAN": st.session_state.ctgan_data,
+                "WGAN": st.session_state.wgan_data,
+                "VAE": st.session_state.vae_data
+            }.items():
+                if target_column_eval not in dataset.columns:
+                     st.error(f"Target column '{target_column_eval}' not found in synthetic dataset '{name}'.")
+
+            
+            # Proceed with evaluation when button is clicked
             if st.button("Run Evaluation"):
                 # Initialize evaluators for each synthetic dataset
-                evaluator_ctgan = ModelEvaluator(uploaded_file, st.session_state.ctgan_data, target_column_eval)
-                evaluator_wgan = ModelEvaluator(uploaded_file, st.session_state.wgan_data, target_column_eval)
+                evaluator_ctgan = ModelEvaluator(data, {"CTGAN": st.session_state.ctgan_data}, target_column_eval)
+                evaluator_wgan = ModelEvaluator(data, {"WGAN": st.session_state.wgan_data}, target_column_eval)
+                evaluator_vae = ModelEvaluator(data, {"VAE": st.session_state.vae_data}, target_column_eval)
 
                 # Run evaluations and get results
-                ctgan_results = evaluator_ctgan.run_evaluation()  # Assuming this method returns a dictionary of results
-                wgan_results = evaluator_wgan.run_evaluation()  # Assuming this method returns a dictionary of results
+                ctgan_results = evaluator_ctgan.run_evaluation()
+                wgan_results = evaluator_wgan.run_evaluation()
+                vae_results = evaluator_vae.run_evaluation()
 
-                # Display the evaluation results
+                 # Display the evaluation results
                 st.write("### Evaluation Results")
                 st.write("#### CTGAN Results")
                 st.write(ctgan_results)
 
                 st.write("#### WGAN Results")
                 st.write(wgan_results)
+
+                st.write("#### VAE Results")
+                st.write(vae_results)
+
+
+        
+
